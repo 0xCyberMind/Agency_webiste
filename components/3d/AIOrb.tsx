@@ -23,7 +23,6 @@ export default function AIOrb() {
 
   // Audio reactive distortion
   useEffect(() => {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     let animationId: number
 
     const animate = () => {
