@@ -7,6 +7,7 @@ import * as THREE from 'three'
 
 export default function AIOrb() {
   const meshRef = useRef<THREE.Mesh>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [distortion, setDistortion] = useState(0)
 
@@ -23,15 +24,35 @@ export default function AIOrb() {
 
   // Audio reactive distortion
   useEffect(() => {
-    let animationId: number
+    const AudioContextConstructor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+
+    if (!AudioContextConstructor) {
+      return
+    }
+
+    audioContextRef.current = new AudioContextConstructor()
+    let animationId = 0
 
     const animate = () => {
-      setDistortion((Math.sin(Date.now() / 300) + 1) / 2)
+      const audioContext = audioContextRef.current
+      const time = audioContext?.currentTime ?? performance.now() / 1000
+
+      setDistortion((Math.sin(time * 3.5) + 1) / 2)
       animationId = requestAnimationFrame(animate)
     }
 
     animate()
-    return () => cancelAnimationFrame(animationId)
+
+    return () => {
+      cancelAnimationFrame(animationId)
+
+      const audioContext = audioContextRef.current
+      audioContextRef.current = null
+
+      if (audioContext && audioContext.state !== 'closed') {
+        void audioContext.close().catch(() => {})
+      }
+    }
   }, [])
 
   useFrame(() => {
